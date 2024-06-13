@@ -16,7 +16,6 @@ function createMap(){
 
     //call getData function
     getData(map)
-
 };
 
 //function to attach popups to each mapped feature
@@ -32,6 +31,16 @@ function onEachFeature(feature, layer) {
     };
 };
 
+// Function to assign colors based on croc names
+function getColor(crocName) {
+    var colors = {
+        "Aristotle": "#ff0000",
+        "Hamish": "#0000ff",
+        // Add more croc names and colors here
+    };
+    return colors[crocName] || "#00ff00"; // Default color if name is not found
+}
+
 //function to retrieve the data and place it on the map
 function getData(map){
     fetch("data/crocs2.geojson")
@@ -39,23 +48,58 @@ function getData(map){
             return response.json();
         })
         .then(function(json){
-            var geojsonMarkerOptions = {
-                radius: 8,
-                fillColor: "#00ff00",
-                color: "#000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-            };
             //create a Leaflet GeoJSON layer and add it to the map
             L.geoJson(json, {
                 onEachFeature: onEachFeature,
                 pointToLayer: function (feature, latlng){
+                    // Define marker options with dynamic fillColor
+                    var geojsonMarkerOptions = {
+                        radius: 8,
+                        fillColor: getColor(feature.properties['croc name']),
+                        color: "#000",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    };
                     //add circle marker to map
                     return L.circleMarker(latlng, geojsonMarkerOptions);
                 }
             }).addTo(map);
-        })  
+
+            // Add legend to map
+            var legend = L.control({position: 'bottomright'});
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend');
+                var crocNames = ["Aristotle", "Hamish"]; // Add more croc names here
+                var colors = ["#ff0000", "#0000ff"]; // Corresponding colors
+                
+                // Add CSS styling for the legend
+                div.innerHTML += '<style>\
+                    .legend {\
+                        background: white;\
+                        padding: 10px;\
+                        border-radius: 5px;\
+                        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);\
+                    }\
+                    .legend i {\
+                        width: 18px;\
+                        height: 18px;\
+                        float: left;\
+                        margin-right: 8px;\
+                        opacity: 0.7;\
+                    }\
+                </style>';
+
+                // Loop through croc names and generate a label with a colored square for each
+                for (var i = 0; i < crocNames.length; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + colors[i] + '"></i> ' +
+                        crocNames[i] + '<br>';
+                }
+                return div;
+            };
+            legend.addTo(map);
+        });
 };
 
-document.addEventListener('DOMContentLoaded',createMap)
+document.addEventListener('DOMContentLoaded',createMap);
